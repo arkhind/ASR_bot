@@ -1,0 +1,4 @@
+aiogram==3.4.1
+python-dotenv
+telethon==1.33.1
+aiohttp
