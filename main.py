@@ -44,6 +44,17 @@ userbot = TelegramClient(StringSession(TELETHON_SESSION), TELETHON_API_ID, TELET
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher()
 
+# Проверяем подключение к боту
+async def test_bot_connection():
+    try:
+        logger.info("Проверка подключения к Telegram Bot API...")
+        me = await bot.get_me()
+        logger.info(f"Бот подключен: @{me.username} (ID: {me.id})")
+        return True
+    except Exception as e:
+        logger.error(f"Ошибка подключения к боту: {e}")
+        return False
+
 def transcribe(file_path):
     url = "https://api.elevenlabs.io/v1/speech-to-text"
     headers = {
@@ -167,8 +178,27 @@ async def start_handler(message: Message):
         logger.error(f"Ошибка при отправке приветственного сообщения: {e}")
         await message.answer("Привет! Отправь мне голосовое, видео или аудио сообщение, и я создам краткую сводку собеседования.")
 
+@dp.message()
+async def handle_all_messages(message: Message):
+    """Обработчик всех сообщений для отладки"""
+    logger.info(f"Получено сообщение от {message.from_user.id}: {message.text[:50] if message.text else 'Нет текста'}")
+    
+    # Если это команда /start, обрабатываем её
+    if message.text and message.text.startswith('/start'):
+        await start_handler(message)
+        return
+    
+    # Если это медиа файл, обрабатываем его
+    if message.content_type in {ContentType.VOICE, ContentType.AUDIO, ContentType.VIDEO}:
+        await handle_media(message)
+        return
+    
+    # Для всех остальных сообщений
+    await message.answer("Отправьте мне аудио или видео файл для анализа собеседования.")
+
 @dp.message(F.content_type.in_({ContentType.VOICE, ContentType.AUDIO, ContentType.VIDEO}))
 async def handle_media(message: Message):
+    logger.info(f"Обработка медиа файла от пользователя {message.from_user.id}")
     # Только пересылаем в группу, скачивает и транскрибирует Telethon
     await bot.copy_message(
         chat_id=GROUP_ID,
@@ -237,10 +267,26 @@ if __name__ == "__main__":
             await userbot.start()
             logger.info("Userbot успешно запущен")
             
+            logger.info("Проверка подключения userbot...")
+            if await userbot.is_user_authorized():
+                logger.info("Userbot авторизован")
+            else:
+                logger.error("Userbot не авторизован!")
+                return
+            
+            logger.info("Проверка подключения основного бота...")
+            if not await test_bot_connection():
+                logger.error("Не удалось подключиться к основному боту!")
+                return
+            
             logger.info("Запуск основного бота...")
+            logger.info(f"Используется токен: {BOT_TOKEN[:10]}...")
             await dp.start_polling(bot)
+            logger.info("Основной бот запущен и работает")
         except Exception as e:
             logger.error(f"Ошибка при запуске бота: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             raise
 
     try:
