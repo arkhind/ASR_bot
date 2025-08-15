@@ -15,6 +15,10 @@ from telethon.sessions import StringSession
 
 load_dotenv()
 
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("bot")
+
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -36,9 +40,6 @@ logger.info(f"TELETHON_SESSION: {'Установлен' if TELETHON_SESSION else
 
 # Вход в аккаунт через Telethon
 userbot = TelegramClient(StringSession(TELETHON_SESSION), TELETHON_API_ID, TELETHON_API_HASH)
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("bot")
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher()
