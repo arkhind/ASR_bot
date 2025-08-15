@@ -25,6 +25,15 @@ TELETHON_API_ID = int(os.getenv("TELETHON_API_ID"))
 TELETHON_API_HASH = os.getenv("TELETHON_API_HASH")
 TELETHON_SESSION = os.getenv("TELETHON_SESSION")
 
+# Проверяем загрузку переменных
+logger.info(f"BOT_TOKEN: {'Установлен' if BOT_TOKEN else 'НЕ УСТАНОВЛЕН'}")
+logger.info(f"ELEVENLABS_API_KEY: {'Установлен' if ELEVENLABS_API_KEY else 'НЕ УСТАНОВЛЕН'}")
+logger.info(f"OPENROUTER_API_KEY: {'Установлен' if OPENROUTER_API_KEY else 'НЕ УСТАНОВЛЕН'}")
+logger.info(f"GROUP_ID: {GROUP_ID}")
+logger.info(f"TELETHON_API_ID: {TELETHON_API_ID}")
+logger.info(f"TELETHON_API_HASH: {'Установлен' if TELETHON_API_HASH else 'НЕ УСТАНОВЛЕН'}")
+logger.info(f"TELETHON_SESSION: {'Установлен' if TELETHON_SESSION else 'НЕ УСТАНОВЛЕН'}")
+
 # Вход в аккаунт через Telethon
 userbot = TelegramClient(StringSession(TELETHON_SESSION), TELETHON_API_ID, TELETHON_API_HASH)
 
@@ -117,7 +126,9 @@ def analyze_interview_with_gemini(text, prompt_file):
 
 @dp.message(CommandStart())
 async def start_handler(message: Message):
-    welcome_text = """
+    logger.info(f"Получена команда /start от пользователя {message.from_user.id}")
+    try:
+        welcome_text = """
 🤖 **Добро пожаловать в ASR Interview Analyzer!**
 
 Этот бот поможет вам быстро создать сводку любого собеседования или интервью.
@@ -149,7 +160,11 @@ async def start_handler(message: Message):
 
 Просто отправьте файл и получите готовую сводку! 📋
 """
-    await message.answer(welcome_text, parse_mode="Markdown")
+        await message.answer(welcome_text, parse_mode="Markdown")
+        logger.info(f"Отправлено приветственное сообщение пользователю {message.from_user.id}")
+    except Exception as e:
+        logger.error(f"Ошибка при отправке приветственного сообщения: {e}")
+        await message.answer("Привет! Отправь мне голосовое, видео или аудио сообщение, и я создам краткую сводку собеседования.")
 
 @dp.message(F.content_type.in_({ContentType.VOICE, ContentType.AUDIO, ContentType.VIDEO}))
 async def handle_media(message: Message):
@@ -215,7 +230,21 @@ if __name__ == "__main__":
     import asyncio
 
     async def main():
-        await userbot.start()
-        await dp.start_polling(bot)
+        logger.info("Запуск бота...")
+        try:
+            logger.info("Запуск userbot...")
+            await userbot.start()
+            logger.info("Userbot успешно запущен")
+            
+            logger.info("Запуск основного бота...")
+            await dp.start_polling(bot)
+        except Exception as e:
+            logger.error(f"Ошибка при запуске бота: {e}")
+            raise
 
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Бот остановлен пользователем")
+    except Exception as e:
+        logger.error(f"Критическая ошибка: {e}")
