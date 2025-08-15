@@ -183,18 +183,25 @@ async def handle_all_messages(message: Message):
     """Обработчик всех сообщений для отладки"""
     logger.info(f"Получено сообщение от {message.from_user.id}: {message.text[:50] if message.text else 'Нет текста'}")
     
-    # Если это команда /start, обрабатываем её
-    if message.text and message.text.startswith('/start'):
-        await start_handler(message)
-        return
-    
-    # Если это медиа файл, обрабатываем его
-    if message.content_type in {ContentType.VOICE, ContentType.AUDIO, ContentType.VIDEO}:
-        await handle_media(message)
-        return
-    
-    # Для всех остальных сообщений
-    await message.answer("Отправьте мне аудио или видео файл для анализа собеседования.")
+    try:
+        # Если это команда /start, обрабатываем её
+        if message.text and message.text.startswith('/start'):
+            logger.info(f"Обработка команды /start от пользователя {message.from_user.id}")
+            await start_handler(message)
+            return
+        
+        # Если это медиа файл, обрабатываем его
+        if message.content_type in {ContentType.VOICE, ContentType.AUDIO, ContentType.VIDEO}:
+            logger.info(f"Обработка медиа файла от пользователя {message.from_user.id}")
+            await handle_media(message)
+            return
+        
+        # Для всех остальных сообщений
+        logger.info(f"Отправка стандартного ответа пользователю {message.from_user.id}")
+        await message.answer("Отправьте мне аудио или видео файл для анализа собеседования.")
+    except Exception as e:
+        logger.error(f"Ошибка при обработке сообщения: {e}")
+        await message.answer("Произошла ошибка при обработке сообщения.")
 
 @dp.message(F.content_type.in_({ContentType.VOICE, ContentType.AUDIO, ContentType.VIDEO}))
 async def handle_media(message: Message):
@@ -268,21 +275,35 @@ if __name__ == "__main__":
             logger.info("Userbot успешно запущен")
             
             logger.info("Проверка подключения userbot...")
-            if await userbot.is_user_authorized():
-                logger.info("Userbot авторизован")
-            else:
-                logger.error("Userbot не авторизован!")
+            try:
+                if await userbot.is_user_authorized():
+                    logger.info("Userbot авторизован")
+                else:
+                    logger.error("Userbot не авторизован!")
+                    return
+            except Exception as e:
+                logger.error(f"Ошибка при проверке авторизации userbot: {e}")
                 return
             
             logger.info("Проверка подключения основного бота...")
-            if not await test_bot_connection():
-                logger.error("Не удалось подключиться к основному боту!")
+            try:
+                if not await test_bot_connection():
+                    logger.error("Не удалось подключиться к основному боту!")
+                    return
+            except Exception as e:
+                logger.error(f"Ошибка при проверке подключения основного бота: {e}")
                 return
             
             logger.info("Запуск основного бота...")
             logger.info(f"Используется токен: {BOT_TOKEN[:10]}...")
-            await dp.start_polling(bot)
-            logger.info("Основной бот запущен и работает")
+            try:
+                await dp.start_polling(bot)
+                logger.info("Основной бот запущен и работает")
+            except Exception as e:
+                logger.error(f"Ошибка при запуске основного бота: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                raise
         except Exception as e:
             logger.error(f"Ошибка при запуске бота: {e}")
             import traceback
