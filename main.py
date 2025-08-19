@@ -44,6 +44,14 @@ userbot = TelegramClient(StringSession(TELETHON_SESSION), TELETHON_API_ID, TELET
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher()
 
+@dp.startup()
+async def on_startup():
+    logger.info("Startup handler: Бот запускается...")
+
+@dp.shutdown()
+async def on_shutdown():
+    logger.info("Shutdown handler: Бот останавливается...")
+
 # Проверяем подключение к боту
 async def test_bot_connection():
     try:
@@ -297,7 +305,9 @@ if __name__ == "__main__":
             logger.info("Запуск основного бота...")
             logger.info(f"Используется токен: {BOT_TOKEN[:10]}...")
             try:
-                await dp.start_polling(bot)
+                logger.info("Начинаем polling...")
+                logger.info("Polling начался успешно")
+                await dp.start_polling(bot, skip_updates=True)
                 logger.info("Основной бот запущен и работает")
             except Exception as e:
                 logger.error(f"Ошибка при запуске основного бота: {e}")
